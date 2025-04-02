@@ -1,54 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ref, onValue, update } from 'firebase/database';
-import { database } from '../firebase';
-import { 
-  Box, 
-  Container, 
-  Paper, 
-  Typography, 
-  Grid, 
-  Button, 
-  Chip, 
+import React, { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { ref, onValue, update } from "firebase/database";
+import { database } from "../firebase";
+import {
+  Box,
+  Container,
+  Paper,
+  Typography,
+  Grid,
+  Button,
+  Chip,
   Divider,
-  CircularProgress
-} from '@mui/material';
+  CircularProgress,
+} from "@mui/material";
+import CryptoJS from "crypto-js";
 
 const ItemDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const secretKey = "123456789";
+
+  const decodedUrl = decodeURIComponent(id);
+  const bytes = CryptoJS.AES.decrypt(decodedUrl, secretKey);
+  const originalUrl = bytes.toString(CryptoJS.enc.Utf8);
 
   useEffect(() => {
     if (!id) return;
-    
-    const itemRef = ref(database, `items/${id}`);
-    const unsubscribe = onValue(itemRef, (snapshot) => {
-      setLoading(true);
-      if (snapshot.exists()) {
-        setItem({ id, ...snapshot.val() });
-      } else {
-        setError('Item not found');
+
+    const itemRef = ref(database, `items/${originalUrl}`);
+    const unsubscribe = onValue(
+      itemRef,
+      (snapshot) => {
+        setLoading(true);
+        if (snapshot.exists()) {
+          setItem({ originalUrl, ...snapshot.val() });
+        } else {
+          setError("Item not found");
+        }
+        setLoading(false);
+      },
+      (error) => {
+        setError(`Error loading item: ${error.message}`);
+        setLoading(false);
       }
-      setLoading(false);
-    }, (error) => {
-      setError(`Error loading item: ${error.message}`);
-      setLoading(false);
-    });
+    );
 
     return () => unsubscribe();
   }, [id]);
 
   const handleStatusChange = (newStatusId) => {
     if (!id || !item) return;
-    
+
     setLoading(true);
-    const itemRef = ref(database, `items/${id}`);
-    update(itemRef, { 
+    const itemRef = ref(database, `items/${originalUrl}`);
+    update(itemRef, {
       status_id: newStatusId,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
       .then(() => {
         // Success handled by onValue listener
@@ -72,11 +82,11 @@ const ItemDetail = () => {
 
   const renderStatusActions = () => {
     if (!item) return null;
-    
+
     if (item.status_id === 1) {
       return (
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           color="success"
           onClick={() => handleStatusChange(2)}
         >
@@ -85,8 +95,8 @@ const ItemDetail = () => {
       );
     } else if (item.status_id === 2) {
       return (
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           color="info"
           onClick={() => handleStatusChange(3)}
         >
@@ -109,7 +119,9 @@ const ItemDetail = () => {
     return (
       <Container maxWidth="md">
         <Paper sx={{ p: 3, mt: 3 }}>
-          <Typography color="error" variant="h6">{error}</Typography>
+          <Typography color="error" variant="h6">
+            {error}
+          </Typography>
           <Button component={Link} to="/items" sx={{ mt: 2 }}>
             Back to Items
           </Button>
@@ -134,21 +146,30 @@ const ItemDetail = () => {
   return (
     <Container maxWidth="md">
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box
+          sx={{
+            mb: 4,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
           <Typography variant="h4" component="h1">
             {item.title}
           </Typography>
-          <Box>
-            {getStatusChip(item.status_id)}
-          </Box>
+          <Box>{getStatusChip(item.status_id)}</Box>
         </Box>
 
         {item.image && (
-          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
-            <img 
+          <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
+            <img
               src={item.image}
               alt={item.title}
-              style={{ maxWidth: '100%', maxHeight: '300px', objectFit: 'contain' }}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "300px",
+                objectFit: "contain",
+              }}
             />
           </Box>
         )}
@@ -173,7 +194,9 @@ const ItemDetail = () => {
           <Grid item xs={12} sm={6}>
             <Typography variant="h6">Date Posted</Typography>
             <Typography variant="body1" sx={{ mt: 1 }}>
-              {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
+              {item.created_at
+                ? new Date(item.created_at).toLocaleDateString()
+                : "N/A"}
             </Typography>
           </Grid>
 
@@ -201,27 +224,25 @@ const ItemDetail = () => {
 
           <Grid item xs={12}>
             <Divider sx={{ my: 2 }} />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Box>
-                <Button 
-                  variant="outlined" 
-                  component={Link} 
+                <Button
+                  variant="outlined"
+                  component={Link}
                   to="/items"
                   sx={{ mr: 2 }}
                 >
                   Back to List
                 </Button>
-                <Button 
-                  variant="contained" 
-                  component={Link} 
-                  to={`/items/${id}/edit`}
+                <Button
+                  variant="contained"
+                  component={Link}
+                  to={`/items/${encodeURIComponent(CryptoJS.AES.encrypt(originalUrl, secretKey).toString())}/edit`}
                 >
                   Edit
                 </Button>
               </Box>
-              <Box>
-                {renderStatusActions()}
-              </Box>
+              <Box>{renderStatusActions()}</Box>
             </Box>
           </Grid>
         </Grid>
