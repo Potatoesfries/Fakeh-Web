@@ -1,12 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { ref, onValue, remove, get } from 'firebase/database';
-import { database } from '../firebase';
-import { Link } from 'react-router-dom';
-import { 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
-  Button, Typography, Container, Box, CircularProgress, Chip, Dialog,
-  DialogActions, DialogContent, DialogContentText, DialogTitle
-} from '@mui/material';
+import React, { useState, useEffect } from "react";
+import { ref, onValue, remove, get } from "firebase/database";
+import { database } from "../firebase";
+import { Link } from "react-router-dom";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  Typography,
+  Container,
+  Box,
+  CircularProgress,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+} from "@mui/material";
 
 const ItemsList = () => {
   const [items, setItems] = useState([]);
@@ -16,14 +31,14 @@ const ItemsList = () => {
 
   useEffect(() => {
     const itemsRef = ref(database, 'items');
-    
+
     const unsubscribe = onValue(itemsRef, (snapshot) => {
       setLoading(true);
       const data = snapshot.val();
       if (data) {
-        const itemsList = Object.entries(data).map(([id, values]) => ({
-          id,
-          ...values
+        const itemsList = Object.entries(data).map(([key, values]) => ({
+          ...values,
+          firebaseKey: key,
         }));
         setItems(itemsList);
       } else {
@@ -46,15 +61,17 @@ const ItemsList = () => {
   const handleDelete = () => {
     if (itemToDelete) {
       const itemRef = ref(database, `items/${itemToDelete}`);
-      remove(itemRef).then(() => {
-        // Item successfully deleted
-        setDeleteDialogOpen(false);
-        setItemToDelete(null);
-      }).catch((error) => {
-        console.error("Error deleting item:", error);
-        setDeleteDialogOpen(false);
-        setItemToDelete(null);
-      });
+      remove(itemRef)
+        .then(() => {
+          // Item successfully deleted
+          setDeleteDialogOpen(false);
+          setItemToDelete(null);
+        })
+        .catch((error) => {
+          console.error("Error deleting item:", error);
+          setDeleteDialogOpen(false);
+          setItemToDelete(null);
+        });
     }
   };
 
@@ -76,7 +93,7 @@ const ItemsList = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
         <CircularProgress />
       </Box>
     );
@@ -88,9 +105,9 @@ const ItemsList = () => {
         <Typography variant="h4" component="h1" gutterBottom>
           Items Management
         </Typography>
-        <Button 
-          variant="contained" 
-          component={Link} 
+        <Button
+          variant="contained"
+          component={Link}
           to="/items/new"
           sx={{ mb: 2 }}
         >
@@ -113,32 +130,38 @@ const ItemsList = () => {
           <TableBody>
             {items.length > 0 ? (
               items.map((item) => (
-                <TableRow key={item.id}>
+                <TableRow key={item.firebaseKey}>
+                  {" "}
+                  {/* Use firebaseKey instead of id */}
                   <TableCell>{item.title}</TableCell>
                   <TableCell>{getStatusChip(item.status_id)}</TableCell>
-                  <TableCell>{item.location || 'N/A'}</TableCell>
+                  <TableCell>{item.location || "N/A"}</TableCell>
                   <TableCell>{item.contact_name}</TableCell>
-                  <TableCell>{item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}</TableCell>
+                  <TableCell>
+                    {item.created_at
+                      ? new Date(item.created_at).toLocaleDateString()
+                      : "N/A"}
+                  </TableCell>
                   <TableCell align="right">
-                    <Button 
-                      component={Link} 
-                      to={`/items/${item.id}`}
+                    <Button
+                      component={Link}
+                      to={`/items/${item.firebaseKey}`} // Use firebaseKey here
                       size="small"
                       sx={{ mr: 1 }}
                     >
                       View
                     </Button>
-                    <Button 
-                      component={Link} 
-                      to={`/items/${item.id}/edit`}
+                    <Button
+                      component={Link}
+                      to={`/items/${item.firebaseKey}/edit`} // And here
                       size="small"
                       color="primary"
                       sx={{ mr: 1 }}
                     >
                       Edit
                     </Button>
-                    <Button 
-                      onClick={() => confirmDelete(item.id)}
+                    <Button
+                      onClick={() => confirmDelete(item.firebaseKey)} // And here
                       size="small"
                       color="error"
                     >
@@ -149,7 +172,9 @@ const ItemsList = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} align="center">No items found</TableCell>
+                <TableCell colSpan={6} align="center">
+                  No items found
+                </TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -157,14 +182,12 @@ const ItemsList = () => {
       </TableContainer>
 
       {/* Delete confirmation dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleCloseDialog}
-      >
+      <Dialog open={deleteDialogOpen} onClose={handleCloseDialog}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this item? This action cannot be undone.
+            Are you sure you want to delete this item? This action cannot be
+            undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
