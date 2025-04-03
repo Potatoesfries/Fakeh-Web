@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { ref, push, get, update } from 'firebase/database';
-import { database } from '../firebase';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  TextField, 
-  Button, 
-  Box, 
-  MenuItem, 
+import React, { useState, useEffect } from "react";
+import { ref, push, get, update } from "firebase/database";
+import { database } from "../firebase";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  TextField,
+  Button,
+  Box,
+  MenuItem,
   Select,
   FormControl,
   FormHelperText,
@@ -14,43 +14,49 @@ import {
   Typography,
   Container,
   Paper,
-  Grid
-} from '@mui/material';
+  Grid,
+} from "@mui/material";
+import CryptoJS from "crypto-js";
 
 const ItemForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = !!id;
-  
+  const secretKey = "123456789";
+
+  const decodedUrl = decodeURIComponent(id);
+  const bytes = CryptoJS.AES.decrypt(decodedUrl, secretKey);
+  const originalUrl = bytes.toString(CryptoJS.enc.Utf8);
+
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
+    title: "",
+    description: "",
     status_id: 1,
-    location: '',
-    contact_name: '',
-    contact_phone: '',
-    contact_email: '',
-    image: ''
+    location: "",
+    contact_name: "",
+    contact_phone: "",
+    contact_email: "",
+    image: "",
   });
-  
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (isEditing) {
       setLoading(true);
-      const itemRef = ref(database, `items/${id}`);
-      
+      const itemRef = ref(database, `items/${originalUrl}`);
+
       get(itemRef)
         .then((snapshot) => {
           if (snapshot.exists()) {
             setFormData(snapshot.val());
           } else {
-            setError('Item not found');
+            setError("Item not found");
           }
         })
         .catch((error) => {
-          setError('Error loading item: ' + error.message);
+          setError("Error loading item: " + error.message);
         })
         .finally(() => {
           setLoading(false);
@@ -60,45 +66,45 @@ const ItemForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleStatusChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      status_id: parseInt(e.target.value)
+      status_id: parseInt(e.target.value),
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const currentDate = new Date().toISOString();
       const itemData = {
         ...formData,
-        updated_at: currentDate
+        updated_at: currentDate,
       };
 
       if (!isEditing) {
         // Adding new item
         itemData.created_at = currentDate;
-        const newItemRef = push(ref(database, 'items'));
+        const newItemRef = push(ref(database, "items"));
         await update(newItemRef, itemData);
       } else {
         // Updating existing item
-        const itemRef = ref(database, `items/${id}`);
+        const itemRef = ref(database, `items/${originalUrl}`);
         await update(itemRef, itemData);
       }
 
-      navigate('/items');
+      navigate("/items");
     } catch (error) {
-      setError('Error saving item: ' + error.message);
+      setError("Error saving item: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -108,7 +114,7 @@ const ItemForm = () => {
     <Container maxWidth="md">
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          {isEditing ? 'Edit Item' : 'Add New Item'}
+          {isEditing ? "Edit Item" : "Add New Item"}
         </Typography>
 
         {error && (
@@ -202,19 +208,12 @@ const ItemForm = () => {
             </Grid>
 
             <Grid item xs={12}>
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate('/items')}
-                >
+              <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+                <Button variant="outlined" onClick={() => navigate("/items")}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  disabled={loading}
-                >
-                  {loading ? 'Saving...' : 'Save'}
+                <Button type="submit" variant="contained" disabled={loading}>
+                  {loading ? "Saving..." : "Save"}
                 </Button>
               </Box>
             </Grid>

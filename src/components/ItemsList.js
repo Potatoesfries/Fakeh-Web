@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from "react";
 import { ref, onValue, remove, get } from "firebase/database";
 import { database } from "../firebase";
@@ -22,12 +24,15 @@ import {
   DialogContentText,
   DialogTitle,
 } from "@mui/material";
+import CryptoJS from "crypto-js";
+
 
 const ItemsList = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const secretKey = "123456789";
 
   useEffect(() => {
     const itemsRef = ref(database, 'items');
@@ -132,7 +137,6 @@ const ItemsList = () => {
               items.map((item) => (
                 <TableRow key={item.firebaseKey}>
                   {" "}
-                  {/* Use firebaseKey instead of id */}
                   <TableCell>{item.title}</TableCell>
                   <TableCell>{getStatusChip(item.status_id)}</TableCell>
                   <TableCell>{item.location || "N/A"}</TableCell>
@@ -145,7 +149,7 @@ const ItemsList = () => {
                   <TableCell align="right">
                     <Button
                       component={Link}
-                      to={`/items/${item.firebaseKey}`} // Use firebaseKey here
+                      to={`/items/${encodeURIComponent(CryptoJS.AES.encrypt(item.firebaseKey, secretKey).toString())}`}
                       size="small"
                       sx={{ mr: 1 }}
                     >
@@ -153,7 +157,7 @@ const ItemsList = () => {
                     </Button>
                     <Button
                       component={Link}
-                      to={`/items/${item.firebaseKey}/edit`} // And here
+                      to={`/items/${encodeURIComponent(CryptoJS.AES.encrypt(item.firebaseKey, secretKey).toString())}/edit`} 
                       size="small"
                       color="primary"
                       sx={{ mr: 1 }}
@@ -161,7 +165,7 @@ const ItemsList = () => {
                       Edit
                     </Button>
                     <Button
-                      onClick={() => confirmDelete(item.firebaseKey)} // And here
+                      onClick={() => confirmDelete(item.firebaseKey)} 
                       size="small"
                       color="error"
                     >
